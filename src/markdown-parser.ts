@@ -19,9 +19,9 @@ export class MarkdownParser {
 
   parse(
     mdString: string,
-    contextPtr: ResourcePointer,
-    plainText: boolean,
-    caseOption: CaseOption
+    contextPtr?: ResourcePointer,
+    plainText?: boolean,
+    caseOption?: CaseOption
   ) {
     if (!mdString) return [];
     return tokensToAST(
@@ -31,9 +31,9 @@ export class MarkdownParser {
 
   parseInline(
     mdString: string,
-    contextPtr: ResourcePointer,
-    plainText: boolean,
-    caseOption: CaseOption
+    contextPtr?: ResourcePointer,
+    plainText?: boolean,
+    caseOption?: CaseOption
   ) {
     if (!mdString) return [];
     return tokensToAST(

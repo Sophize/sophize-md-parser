@@ -38,6 +38,15 @@ export class LinkContent {
 }
 const EMPTY_CONTENT = new LinkContent(null, null, null, null, false);
 
+function contextFromState(state): MdContext {
+  if (!state?.env ) return null;
+  return {
+    contextPtr: state.env.contextPtr,
+    plainText: state.env.plainText,
+    caseOption: state.env.caseOption
+  }
+}
+
 function isValidOpening(state, pos: number) {
   return true;
   // if (pos === 0) return true;
@@ -67,7 +76,7 @@ function linkFetch(state, silent: boolean) {
 
   const linkContent = getLinkContent(
     potentialString,
-    state.env,
+    contextFromState(state),
     hasFirstCharacter
   );
   if (!canBeValid(linkContent)) {
