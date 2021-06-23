@@ -1,5 +1,5 @@
 import MarkdownIt from "markdown-it";
-import { LinkMarkdownPlugin } from "./link-markdown-plugin";
+import { LinkPlugin } from "./link-plugin";
 import tokensToAST from "./md-utils";
 import { TexmathPlugin } from "./texmath-plugin";
 
@@ -10,7 +10,7 @@ describe("TexmathPlugin", () => {
     typographer: true,
   })
     .use(TexmathPlugin)
-    .use(LinkMarkdownPlugin);
+    .use(LinkPlugin);
 
   it("not TeX math - opening brace followed by space", () => {
     const ast = tokensToAST(md.parse("$ E = mc^2$"));

@@ -26,14 +26,14 @@ export class LinkContent {
   public static getLinkContext(
     viewerContext: MdContext,
     linkHasFirstCharacter: boolean
-  ) {
+  ): MdContext {
     if (linkHasFirstCharacter) return viewerContext;
     if (!viewerContext) return null;
-    return new MdContext(
-      viewerContext.contextPtr,
-      viewerContext.plainText,
-      null
-    );
+    return {
+      contextPtr: viewerContext.contextPtr,
+      plainText: viewerContext.plainText,
+      caseOption: null,
+    };
   }
 }
 const EMPTY_CONTENT = new LinkContent(null, null, null, null, false);
@@ -167,7 +167,7 @@ function targetAndDisplayInSimpleLink(targetAndDisplay: string) {
   ];
 }
 
-export function LinkMarkdownPlugin(markDownIt, options: any) {
+export function LinkPlugin(markDownIt, options: any) {
   markDownIt.inline.ruler.after("escape", "custom_link", linkFetch);
 }
 // https://github.com/markdown-it/markdown-it/issues/289

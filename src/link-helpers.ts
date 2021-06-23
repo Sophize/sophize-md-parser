@@ -14,12 +14,10 @@ export enum LinkType {
   PAGE_PTR,
 }
 
-export class MdContext {
-  constructor(
-    public contextPtr: ResourcePointer,
-    public plainText: boolean,
-    public caseOption: CaseOption
-  ) {}
+export interface MdContext {
+  contextPtr: ResourcePointer;
+  plainText: boolean;
+  caseOption: CaseOption;
 }
 
 export class LinkTarget {

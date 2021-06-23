@@ -1,7 +1,6 @@
 import MarkdownIt from "markdown-it";
 import { ResourcePointer } from "sophize-datamodel";
-import { MdContext } from "./link-helpers";
-import { LinkMarkdownPlugin } from "./link-markdown-plugin";
+import { LinkPlugin } from "./link-plugin";
 import tokensToAST from "./md-utils";
 import { CaseOption } from "./resource-display-options";
 import { TexmathPlugin } from "./texmath-plugin";
@@ -15,7 +14,7 @@ export class MarkdownParser {
       typographer: true,
     })
       .use(TexmathPlugin)
-      .use(LinkMarkdownPlugin);
+      .use(LinkPlugin);
   }
 
   parse(
@@ -24,9 +23,9 @@ export class MarkdownParser {
     plainText: boolean,
     caseOption: CaseOption
   ) {
-    if (!mdString) mdString = "";
+    if (!mdString) return [];
     return tokensToAST(
-      this.md.parse(mdString, new MdContext(contextPtr, plainText, caseOption))
+      this.md.parse(mdString, { contextPtr, plainText, caseOption })
     );
   }
 
@@ -36,12 +35,9 @@ export class MarkdownParser {
     plainText: boolean,
     caseOption: CaseOption
   ) {
-    if (!mdString) mdString = "";
+    if (!mdString) return [];
     return tokensToAST(
-      this.md.parseInline(
-        mdString,
-        new MdContext(contextPtr, plainText, caseOption)
-      )
+      this.md.parseInline(mdString, { contextPtr, plainText, caseOption })
     );
   }
 }

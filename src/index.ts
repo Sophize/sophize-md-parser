@@ -1,5 +1,5 @@
 import { LinkHelpers, LinkTarget, LinkType, MdContext } from "./link-helpers";
-import { LinkContent } from "./link-markdown-plugin";
+import { LinkContent } from "./link-plugin";
 import { MarkdownParser } from "./markdown-parser";
 import {
   CaseOption,
