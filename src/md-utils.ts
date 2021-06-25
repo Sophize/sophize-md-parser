@@ -1,5 +1,7 @@
+import Token from "markdown-it/lib/token";
+
 const regSelectOpenClose = /_open|_close/g;
-function getTokenTypeByToken(token) {
+function getTokenTypeByToken(token: Token) {
   let cleanedType = "unknown";
 
   if (token.type) {
@@ -22,9 +24,23 @@ function getNodeID() {
   return `mdnode_${uuid.toString(16)}`;
 }
 
-function createNode(token, tokenIndex) {
+export interface AstNode {
+  type: string;
+  sourceType: string;
+  sourceInfo: string;
+  sourceMeta: any;
+  block: boolean;
+  markup: string;
+  key: string;
+  content: any;
+  tokenIndex: number;
+  index: number;
+  attributes: any;
+  children: AstNode[];
+}
+
+function createNode(token: Token, tokenIndex): AstNode {
   const type = getTokenTypeByToken(token);
-  const content = token.content;
 
   let attributes = {};
 
@@ -43,7 +59,7 @@ function createNode(token, tokenIndex) {
     block: token.block,
     markup: token.markup,
     key: getNodeID(),
-    content,
+    content: token.content,
     tokenIndex,
     index: 0,
     attributes,
@@ -56,9 +72,9 @@ function createNode(token, tokenIndex) {
  * @param {Array<{type: string, tag:string, content: string, children: *, attrs: Array}>}tokens
  * @return {Array}
  */
-export default function tokensToAST(tokens) {
+export default function tokensToAST(tokens):AstNode[] {
   const stack = [];
-  let children = [];
+  let children = [] as AstNode[];
 
   if (!tokens || tokens.length === 0) {
     return [];

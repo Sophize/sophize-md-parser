@@ -1,4 +1,9 @@
-import { LinkHelpers, LinkType, MdContext } from "./link-helpers";
+import {
+  CommentDisplayOptions,
+  PageDisplayOptions,
+  ResourceDisplayOptions,
+} from "./link-display-options";
+import { LinkHelpers, LinkTarget, LinkType, MdContext } from "./link-helpers";
 
 const SIMPLE_LINK = /^#([a-zA-Z0-9\/:._|\~\-]+)/;
 const SIMPLE_LINK_WITH_BRACKETS = /^#\(([a-zA-Z0-9\/:._|\~\-]+)\)/;
@@ -6,45 +11,80 @@ const TWO_PART_LINK_WITH_QUOTES =
   /^#\(\s*([a-zA-Z0-9\/:._\~\-]+)\s*,\s*('[^']*'\s*[^\)']*)\s*\)/;
 const TWO_PART_LINK = /^#\(\s*([a-zA-Z0-9\/:._\~\-]+)\s*,\s*([^\)']+)\s*\)/;
 
-export class LinkContent {
+export interface LinkContent {
+  raw: string;
   // Create a new type 'LinkContext' when things become more complicated.
   linkContext: MdContext;
-  constructor(
-    public target: string,
-    public display: string,
-    public raw: string,
-    viewerContext: MdContext,
-    /* Link is responsible for the 1st character that is rendered by the markdown it is contained in.*/
-    linkHasFirstCharacter: boolean
-  ) {
-    this.linkContext = LinkContent.getLinkContext(
-      viewerContext,
-      linkHasFirstCharacter
-    );
-  }
-
-  public static getLinkContext(
-    viewerContext: MdContext,
-    linkHasFirstCharacter: boolean
-  ): MdContext {
-    if (linkHasFirstCharacter) return viewerContext;
-    if (!viewerContext) return null;
-    return {
-      contextPtr: viewerContext.contextPtr,
-      plainText: viewerContext.plainText,
-      caseOption: null,
-    };
-  }
+  linkTarget: LinkTarget;
+  resourceDisplayOptions?: ResourceDisplayOptions;
+  pageDisplayOptions?: PageDisplayOptions;
+  commentDisplayOptions?: CommentDisplayOptions;
 }
-const EMPTY_CONTENT = new LinkContent(null, null, null, null, false);
+
+function getLinkContext(
+  viewerContext: MdContext,
+  linkHasFirstCharacter: boolean
+): MdContext {
+  if (linkHasFirstCharacter || !viewerContext) return viewerContext;
+  return {
+    contextPtr: viewerContext.contextPtr,
+    plainText: viewerContext.plainText,
+    caseOption: null,
+  };
+}
+
+export function createLinkContent(
+  raw: string,
+  targetInput: string,
+  displayInput: string,
+  /* Link is responsible for the 1st character that is rendered by the markdown it is contained in.*/
+  linkHasFirstCharacter: boolean,
+  viewerContext?: MdContext
+): LinkContent {
+  const linkContext = getLinkContext(viewerContext, linkHasFirstCharacter);
+  const linkTarget = LinkHelpers.getLinkTarget(
+    targetInput,
+    viewerContext?.contextPtr
+  );
+
+  switch (linkTarget?.linkType) {
+    case LinkType.COMMENT:
+      return {
+        raw,
+        linkContext,
+        linkTarget,
+        commentDisplayOptions: new CommentDisplayOptions(displayInput),
+      };
+    case LinkType.PAGE_PTR:
+      return {
+        raw,
+        linkContext,
+        linkTarget,
+        pageDisplayOptions: new PageDisplayOptions(displayInput),
+      };
+    case LinkType.RESOURCE_PTR:
+    case LinkType.PROP_PTR:
+      return {
+        raw,
+        linkContext,
+        linkTarget,
+        resourceDisplayOptions: new ResourceDisplayOptions(
+          displayInput,
+          viewerContext?.plainText,
+          viewerContext?.caseOption
+        ),
+      };
+  }
+  return null;
+}
 
 function contextFromState(state): MdContext {
-  if (!state?.env ) return null;
+  if (!state?.env) return;
   return {
     contextPtr: state.env.contextPtr,
     plainText: state.env.plainText,
-    caseOption: state.env.caseOption
-  }
+    caseOption: state.env.caseOption,
+  };
 }
 
 function isValidOpening(state, pos: number) {
@@ -79,7 +119,7 @@ function linkFetch(state, silent: boolean) {
     contextFromState(state),
     hasFirstCharacter
   );
-  if (!canBeValid(linkContent)) {
+  if (!linkContent) {
     if (!silent) {
       state.pending += "#";
     }
@@ -97,23 +137,14 @@ function linkFetch(state, silent: boolean) {
   return true;
 }
 
-function canBeValid(content: LinkContent) {
-  return (
-    content.raw &&
-    content.raw.length &&
-    LinkHelpers.getLinkTarget(content.target, content.linkContext.contextPtr)
-      .linkType !== LinkType.UNKNOWN
-  );
-}
-
 export function getLinkContent(
   potentialString: string,
   viewerContext: MdContext,
   hasFirstChar: boolean
 ) {
-  if (potentialString.length < 2) return EMPTY_CONTENT;
+  if (potentialString.length < 2) return null;
   if (potentialString.charAt(1) !== "(") {
-    if (!SIMPLE_LINK.test(potentialString)) return EMPTY_CONTENT;
+    if (!SIMPLE_LINK.test(potentialString)) return null;
     let raw = potentialString.match(SIMPLE_LINK)[0];
     let targetAndDisplay = potentialString.match(SIMPLE_LINK)[1];
 
@@ -131,7 +162,7 @@ export function getLinkContent(
     }
 
     const [target, display] = targetAndDisplayInSimpleLink(targetAndDisplay);
-    return new LinkContent(target, display, raw, viewerContext, hasFirstChar);
+    return createLinkContent(raw, target, display, hasFirstChar, viewerContext);
   }
 
   if (SIMPLE_LINK_WITH_BRACKETS.test(potentialString)) {
@@ -140,30 +171,18 @@ export function getLinkContent(
       SIMPLE_LINK_WITH_BRACKETS
     )[1];
     const [target, display] = targetAndDisplayInSimpleLink(targetAndDisplay);
-    return new LinkContent(target, display, raw, viewerContext, hasFirstChar);
+    return createLinkContent(raw, target, display, hasFirstChar, viewerContext);
   }
 
   if (TWO_PART_LINK_WITH_QUOTES.test(potentialString)) {
-    const matches = potentialString.match(TWO_PART_LINK_WITH_QUOTES);
-    return new LinkContent(
-      matches[1],
-      matches[2],
-      matches[0],
-      viewerContext,
-      hasFirstChar
-    );
+    const m = potentialString.match(TWO_PART_LINK_WITH_QUOTES);
+    return createLinkContent(m[0], m[1], m[2], hasFirstChar, viewerContext);
   }
   if (TWO_PART_LINK.test(potentialString)) {
-    const matches = potentialString.match(TWO_PART_LINK);
-    return new LinkContent(
-      matches[1],
-      matches[2],
-      matches[0],
-      viewerContext,
-      hasFirstChar
-    );
+    const m = potentialString.match(TWO_PART_LINK);
+    return createLinkContent(m[0], m[1], m[2], hasFirstChar, viewerContext);
   }
-  return EMPTY_CONTENT;
+  return null;
 }
 
 function targetAndDisplayInSimpleLink(targetAndDisplay: string) {

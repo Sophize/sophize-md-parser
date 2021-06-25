@@ -1,8 +1,17 @@
 import MarkdownIt from "markdown-it";
-import { ResourcePointer } from "sophize-datamodel";
+import { Observable, of } from "rxjs";
+import { map, switchMap } from "rxjs/operators";
+import { Language, Resource } from "sophize-datamodel";
+import {
+  expandAst,
+  getResourcesToExpand,
+  ILatexDefsFetcher,
+  IResourceFetcher,
+} from "./ast-expander";
+import { MdContext } from "./link-helpers";
 import { LinkPlugin } from "./link-plugin";
-import tokensToAST from "./md-utils";
-import { CaseOption } from "./resource-display-options";
+import tokensToAST, { AstNode } from "./md-utils";
+import { metamathToMarkdown } from "./metamath/metamath-parser";
 import { TexmathPlugin } from "./texmath-plugin";
 
 export class MarkdownParser {
@@ -17,27 +26,58 @@ export class MarkdownParser {
       .use(LinkPlugin);
   }
 
-  parse(
+  parseSimple = (
     mdString: string,
-    contextPtr?: ResourcePointer,
-    plainText?: boolean,
-    caseOption?: CaseOption
-  ) {
-    if (!mdString) return [];
-    return tokensToAST(
-      this.md.parse(mdString, { contextPtr, plainText, caseOption })
+    getLatexDefs?: ILatexDefsFetcher,
+    mdContext?: MdContext
+  ): Observable<AstNode[]> => {
+    if (!mdString) return of([]);
+    let md$ = of(mdString);
+    if (mdContext?.language === Language.MetamathSetMm) {
+      md$ = metamathToMarkdown(mdString, mdContext.lookupTerms, getLatexDefs);
+    }
+    return md$.pipe(
+      map((str) => {
+        const corrected =
+          (mdContext?.addNegationMarker ? " _It is false that_: " : "") + str;
+        const tokens = mdContext?.inline
+          ? this.md.parseInline(corrected, mdContext)
+          : this.md.parse(corrected, mdContext);
+        return tokensToAST(tokens);
+      })
     );
-  }
+  };
 
-  parseInline(
+  parseExpanded(
     mdString: string,
-    contextPtr?: ResourcePointer,
-    plainText?: boolean,
-    caseOption?: CaseOption
-  ) {
-    if (!mdString) return [];
-    return tokensToAST(
-      this.md.parseInline(mdString, { contextPtr, plainText, caseOption })
+    getResources: IResourceFetcher,
+    getLatexDefs?: ILatexDefsFetcher,
+    mdContext?: MdContext
+  ): Observable<AstNode[]> {
+    const ast = this.parseSimple(mdString, getLatexDefs, mdContext);
+    if (!getResources) return ast;
+    const resourceMap = new Map<string, Resource>();
+
+    return ast.pipe(
+      switchMap((ast: AstNode[]) => {
+        const toExpand = new Set<string>();
+        getResourcesToExpand(ast, toExpand);
+        if (!toExpand.size) return of(ast);
+        const expandedAst$ = new Observable<AstNode[]>((subscriber) => {
+          subscriber.next(ast);
+          expandAst(
+            0,
+            subscriber,
+            ast,
+            toExpand,
+            resourceMap,
+            this,
+            getResources,
+            getLatexDefs
+          );
+        });
+        return expandedAst$;
+      })
     );
   }
 }

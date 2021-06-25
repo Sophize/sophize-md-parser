@@ -1,4 +1,5 @@
 import { LinkContent } from "../src";
+import { AstNode } from "../src/md-utils";
 
 export function simpleNode(
   type: string,
@@ -40,17 +41,14 @@ export function linkNode(content: LinkContent) {
   return simpleNode("custom_link", [], content);
 }
 
-export const EMPTY_CONTEXT = { contextPtr: undefined, caseOption: undefined, plainText: undefined };
-
 export function astMatches(expected, actual, index: number[]): string {
   for (const key in expected) {
     if (key === "children") {
       continue;
-    }
-    else if (key === "content") {
-      const e = JSON.stringify(expected[key])
+    } else if (key === "content") {
+      const e = JSON.stringify(expected[key]);
       const a = JSON.stringify(actual[key]);
-      if(e !==a ){
+      if (e !== a) {
         const err = `[content] mismatch - expected [${e}], actual [${a}]`;
         return addIndex(index, err);
       }
@@ -88,4 +86,33 @@ export function safeLen(arr: any[]) {
 
 export function addIndex(index: number[], logMessage: string) {
   return "[" + index.join(", ") + "]: " + logMessage;
+}
+
+export function stripExcessFields(tree: AstNode[]): Partial<AstNode>[] {
+  const copy: Partial<AstNode>[] = [];
+  for (const node of tree) {
+    const { type, block, content, children, index } = node;
+    let copyContent = content;
+    if (typeof copyContent !== "string") {
+      copyContent = {...content};
+      if(content.linkTarget) {
+        copyContent.linkTarget = {...content.linkTarget}
+        if(copyContent.linkTarget?.propPtr) {
+          copyContent.linkTarget.propPtr = copyContent.linkTarget?.propPtr.toString();
+        }
+        if(copyContent.linkTarget?.ptr) {
+          copyContent.linkTarget.ptr = copyContent.linkTarget?.ptr.toString();
+        }
+        
+      }
+    }
+    copy.push({
+      type,
+      block,
+      content: copyContent,
+      index,
+      children: stripExcessFields(children) as AstNode[],
+    });
+  }
+  return copy;
 }

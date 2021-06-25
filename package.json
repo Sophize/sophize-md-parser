@@ -1,9 +1,9 @@
 {
   "name": "sophize-md-parser",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Parser for Sophize markdown",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
     "test": "jasmine-ts --config=jasmine.json"
   },
@@ -27,13 +27,16 @@
   "homepage": "https://github.com/Sophize/sophize-md-parser#readme",
   "dependencies": {
     "markdown-it": "^12.0.6",
+    "rxjs": "^7.1.0",
     "sophize-datamodel": "^0.3.2"
   },
   "devDependencies": {
     "@types/jasmine": "^3.7.7",
+    "@types/markdown-it": "^12.0.2",
     "jasmine": "^3.7.0",
     "jasmine-spec-reporter": "^7.0.0",
     "jasmine-ts": "^0.4.0",
+    "node-fetch": "^2.6.1",
     "ts-node": "^10.0.0",
     "typescript": "^4.2.4"
   }

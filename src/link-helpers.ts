@@ -1,10 +1,11 @@
 import {
+  Language,
   PagePointer,
   PropositionPointer,
   ResourcePointer,
   ResourceType,
 } from "sophize-datamodel";
-import { CaseOption } from "./resource-display-options";
+import { CaseOption } from "./link-display-options";
 
 export enum LinkType {
   UNKNOWN,
@@ -15,9 +16,13 @@ export enum LinkType {
 }
 
 export interface MdContext {
-  contextPtr: ResourcePointer;
-  plainText: boolean;
-  caseOption: CaseOption;
+  inline?: boolean;
+  language?: Language;
+  lookupTerms?: ResourcePointer[];
+  contextPtr?: ResourcePointer;
+  plainText?: boolean;
+  caseOption?: CaseOption;
+  addNegationMarker?: boolean;
 }
 
 export class LinkTarget {
@@ -26,12 +31,6 @@ export class LinkTarget {
   public ptr: ResourcePointer;
   public propPtr: PropositionPointer;
   public pagePtr: PagePointer;
-
-  static invalid() {
-    const invalid = new LinkTarget();
-    invalid.linkType = LinkType.UNKNOWN;
-    return invalid;
-  }
 
   toString() {
     switch (this.linkType) {
@@ -74,16 +73,17 @@ export class LinkHelpers {
   }
 
   public static getLinkTarget(target: string, contextPtr?: ResourcePointer) {
+    if (!target) return null;
     const linkTarget = new LinkTarget();
 
     const targetParts = target.split("/");
-    if (!targetParts || targetParts.length === 0) return LinkTarget.invalid();
+    if (!targetParts || targetParts.length === 0) return null;
 
     const lastPart = targetParts[targetParts.length - 1];
     const commentId = +lastPart;
     if (commentId) {
       linkTarget.ptr = LinkHelpers.getPtr(targetParts.slice(0, -1), contextPtr);
-      if (!linkTarget.ptr) return LinkTarget.invalid();
+      if (!linkTarget.ptr) return null;
 
       linkTarget.linkType = LinkType.COMMENT;
       linkTarget.commentId = commentId;
@@ -114,7 +114,7 @@ export class LinkHelpers {
       linkTarget.propPtr = propPtr;
       return linkTarget;
     }
-    return LinkTarget.invalid();
+    return null;
   }
 
   public static applyCase(input: string, caseOption: CaseOption) {

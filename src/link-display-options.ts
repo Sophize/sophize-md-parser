@@ -1,5 +1,68 @@
 import { Resource } from "sophize-datamodel";
 
+export enum CommentDisplayMode {
+  DEFAULT = "DEFAULT",
+  CUSTOM = "CUSTOM",
+}
+
+export class CommentDisplayOptions {
+  mode = CommentDisplayMode.DEFAULT;
+  customText: string;
+  constructor(displayInput: string) {
+    if (!displayInput) return;
+    if (
+      displayInput.startsWith("'") &&
+      displayInput.endsWith("'") &&
+      displayInput.length > 2
+    ) {
+      this.mode = CommentDisplayMode.CUSTOM;
+      this.customText = displayInput.slice(1, -1);
+      return;
+    }
+
+    if (displayInput.toUpperCase() !== CommentDisplayMode.DEFAULT) {
+      this.customText = `Unknown option: [${displayInput}]`;
+    }
+  }
+}
+
+export enum PageDisplayMode {
+  DEFAULT = "DEFAULT",
+  CUSTOM = "CUSTOM",
+  REFERENCE = "REFERENCE",
+}
+
+export class PageDisplayOptions {
+  mode = PageDisplayMode.DEFAULT;
+  customText: string;
+  constructor(displayInput: string) {
+    if (!displayInput) return;
+
+    if (
+      displayInput.startsWith("'") &&
+      displayInput.endsWith("'") &&
+      displayInput.length > 2
+    ) {
+      this.mode = PageDisplayMode.CUSTOM;
+      this.customText = displayInput.slice(1, -1);
+      return;
+    }
+
+    switch (displayInput.toUpperCase()) {
+      case PageDisplayMode.DEFAULT:
+        this.mode = PageDisplayMode.DEFAULT;
+        return;
+      case PageDisplayMode.REFERENCE:
+        this.mode = PageDisplayMode.REFERENCE;
+        return;
+    }
+    
+    if (displayInput.toUpperCase() !== CommentDisplayMode.DEFAULT) {
+      this.customText = `Unknown option: [${displayInput}]`;
+    }
+  }
+}
+
 export enum ResourceDisplayMode {
   NAME = "NAME", // Default.
   CUSTOM = "CUSTOM",
@@ -37,7 +100,7 @@ const OPTION_PARTS_SEPARATOR = "|";
 
 export class ResourceDisplayOptions {
   private mode: ResourceDisplayMode;
-  private expandOptions: OtherDisplayOptions[] = [];
+  private otherOptions: OtherDisplayOptions[] = [];
   linkOption: LinkOption;
   caseOption: CaseOption;
   customText: string;
@@ -45,8 +108,8 @@ export class ResourceDisplayOptions {
 
   constructor(
     displayOptionsString: string,
-    parentPlainText: boolean,
-    parentCaseOption: CaseOption
+    parentPlainText?: boolean,
+    parentCaseOption?: CaseOption
   ) {
     if (displayOptionsString) {
       displayOptionsString = displayOptionsString.replace(/\\\|/g, "|");
@@ -55,7 +118,7 @@ export class ResourceDisplayOptions {
         .forEach((option) => this.addPart(option.trim()));
     }
     if (parentPlainText && !this.shouldShowPlainText()) {
-      this.expandOptions.push(OtherDisplayOptions.PLAIN_TEXT);
+      this.otherOptions.push(OtherDisplayOptions.PLAIN_TEXT);
     }
     if (parentCaseOption && parentCaseOption !== CaseOption.DEFAULT_CASE) {
       this.caseOption = parentCaseOption;
@@ -63,19 +126,23 @@ export class ResourceDisplayOptions {
 
     if (this.shouldShowPlainText()) {
       if (this.shouldShowTVI()) {
-        this.expandOptions.push(OtherDisplayOptions.HIDE_TVI);
+        this.otherOptions.push(OtherDisplayOptions.HIDE_TVI);
       }
       if (this.shouldShowValidity()) {
-        this.expandOptions.push(OtherDisplayOptions.HIDE_VALIDITY);
+        this.otherOptions.push(OtherDisplayOptions.HIDE_VALIDITY);
       }
       if (this.shouldShowActivated()) {
-        this.expandOptions.push(OtherDisplayOptions.HIDE_ACTIVATED);
+        this.otherOptions.push(OtherDisplayOptions.HIDE_ACTIVATED);
       }
       this.linkOption = LinkOption.NO_LINK;
     }
     ResourceDisplayOptions.fillDefaultsAndCheckError(this);
   }
 
+  public getInputMode() {
+    return this.mode;
+  }
+  
   public getEffectiveMode(resource: Resource) {
     if (!this.mode || (this.mode === ResourceDisplayMode.EXPAND && !resource)) {
       // not REFERENCE, to make sure we see the ellipsis(...) while the resource is getting loaded.
@@ -85,35 +152,35 @@ export class ResourceDisplayOptions {
   }
 
   public shouldRenderInline() {
-    return this.expandOptions.includes(OtherDisplayOptions.RENDER_INLINE);
+    return this.otherOptions.includes(OtherDisplayOptions.RENDER_INLINE);
   }
 
   public shouldShowTVI() {
-    return !this.expandOptions.includes(OtherDisplayOptions.HIDE_TVI);
+    return !this.otherOptions.includes(OtherDisplayOptions.HIDE_TVI);
   }
 
   public shouldShowValidity() {
-    return !this.expandOptions.includes(OtherDisplayOptions.HIDE_VALIDITY);
+    return !this.otherOptions.includes(OtherDisplayOptions.HIDE_VALIDITY);
   }
 
   public shouldShowActivated() {
-    return !this.expandOptions.includes(OtherDisplayOptions.HIDE_ACTIVATED);
+    return !this.otherOptions.includes(OtherDisplayOptions.HIDE_ACTIVATED);
   }
 
   public shouldShowArgTextOnly() {
-    return this.expandOptions.includes(OtherDisplayOptions.ARG_TEXT_ONLY);
+    return this.otherOptions.includes(OtherDisplayOptions.ARG_TEXT_ONLY);
   }
 
   public shouldShowPlainText() {
-    return this.expandOptions.includes(OtherDisplayOptions.PLAIN_TEXT);
+    return this.otherOptions.includes(OtherDisplayOptions.PLAIN_TEXT);
   }
 
   private static fillDefaultsAndCheckError(options: ResourceDisplayOptions) {
     if (!options.mode) options.mode = ResourceDisplayMode.NAME;
     if (!options.linkOption) options.linkOption = LinkOption.OVERLAY_LINK;
     if (!options.caseOption) options.caseOption = CaseOption.DEFAULT_CASE;
-    if (!options.expandOptions) options.expandOptions = [];
-    // TODO: check expandOptions only if mode = expand
+    if (!options.otherOptions) options.otherOptions = [];
+    // TODO: check otherOptions only if mode = expand
     // linkOption only if not expand
     // type specific expand/display options.
     return options;
@@ -185,9 +252,9 @@ export class ResourceDisplayOptions {
   }
 
   private addOtherDisplayOption(option: OtherDisplayOptions) {
-    if (this.expandOptions.includes(option)) {
+    if (this.otherOptions.includes(option)) {
       this.error = "Option already set: " + option;
     }
-    this.expandOptions.push(option);
+    this.otherOptions.push(option);
   }
 }
