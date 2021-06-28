@@ -1,3 +1,4 @@
+import { of } from "rxjs";
 import { map } from "rxjs/operators";
 import {
   Language,
@@ -246,9 +247,12 @@ export function metamathToMarkdown(
   getLatexDefs: ILatexDefsFetcher
 ) {
   const parsed: MetamathObject = parseMetamathInput(input, lookupTerms);
+  if (!getLatexDefs) {
+    getLatexDefs = (_, k) => of(k);
+  }
 
   return getLatexDefs(Language.MetamathSetMm, parsed.symList()).pipe(
-    map((latexDefs:string[]) => parsed.toMarkdown(latexDefs)[0])
+    map((latexDefs: string[]) => parsed.toMarkdown(latexDefs)[0])
   );
 }
 

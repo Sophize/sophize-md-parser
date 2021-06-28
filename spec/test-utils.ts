@@ -91,7 +91,7 @@ export function addIndex(index: number[], logMessage: string) {
 export function stripExcessFields(tree: AstNode[]): Partial<AstNode>[] {
   const copy: Partial<AstNode>[] = [];
   for (const node of tree) {
-    const { type, block, content, children, index } = node;
+    const { type, block, content, children, index, expansionOf } = node;
     let copyContent = content;
     if (typeof copyContent !== "string") {
       copyContent = {...content};
@@ -111,6 +111,7 @@ export function stripExcessFields(tree: AstNode[]): Partial<AstNode>[] {
       block,
       content: copyContent,
       index,
+      expansionOf,
       children: stripExcessFields(children) as AstNode[],
     });
   }

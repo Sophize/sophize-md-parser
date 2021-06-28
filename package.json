@@ -1,6 +1,6 @@
 {
   "name": "sophize-md-parser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Parser for Sophize markdown",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",

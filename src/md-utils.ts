@@ -1,4 +1,5 @@
 import Token from "markdown-it/lib/token";
+import { LinkContent } from "./link-plugin";
 
 const regSelectOpenClose = /_open|_close/g;
 function getTokenTypeByToken(token: Token) {
@@ -33,13 +34,18 @@ export interface AstNode {
   markup: string;
   key: string;
   content: any;
+  expansionOf: LinkContent[];
   tokenIndex: number;
   index: number;
   attributes: any;
   children: AstNode[];
 }
 
-function createNode(token: Token, tokenIndex): AstNode {
+function createNode(
+  token: Token,
+  tokenIndex: number,
+  expansionOf: LinkContent[]
+): AstNode {
   const type = getTokenTypeByToken(token);
 
   let attributes = {};
@@ -60,10 +66,11 @@ function createNode(token: Token, tokenIndex): AstNode {
     markup: token.markup,
     key: getNodeID(),
     content: token.content,
+    expansionOf,
     tokenIndex,
     index: 0,
     attributes,
-    children: tokensToAST(token.children),
+    children: tokensToAST(token.children, expansionOf),
   };
 }
 
@@ -72,7 +79,10 @@ function createNode(token: Token, tokenIndex): AstNode {
  * @param {Array<{type: string, tag:string, content: string, children: *, attrs: Array}>}tokens
  * @return {Array}
  */
-export default function tokensToAST(tokens):AstNode[] {
+export default function tokensToAST(
+  tokens,
+  expansionOf?: LinkContent[]
+): AstNode[] {
   const stack = [];
   let children = [] as AstNode[];
 
@@ -82,7 +92,7 @@ export default function tokensToAST(tokens):AstNode[] {
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    const astNode = createNode(token, i);
+    const astNode = createNode(token, i, expansionOf);
 
     if (
       !(
@@ -106,4 +116,31 @@ export default function tokensToAST(tokens):AstNode[] {
   }
 
   return children;
+}
+
+export function toText(t: AstNode[], index: number[]) {
+  if (!t?.length) return "";
+  let v = "";
+  for (let i = 0; i < t.length; i++) {
+    const node = t[i];
+    let c;
+    if (node.content?.linkTarget?.ptr) {
+      c = node.content.linkTarget.ptr.toString();
+    } else {
+      c = node.content;
+    }
+    const linkContent =
+      "(" +
+      (node.expansionOf || [])
+        .map((link) => {
+          const t = link.linkTarget;
+          return (t?.propPtr || t?.ptr)?.toString();
+        })
+        .join(", ") +
+      ")";
+
+    v += `${[...index, i].join(":")} ${node.type} [${c}] ${linkContent}\n`;
+    v += toText(node.children, [...index, i]);
+  }
+  return v;
 }

@@ -35,15 +35,22 @@ function expandedMdForProposition(p: Proposition, positiveStatement: boolean) {
   return " _It is false that_: " + p.statement;
 }
 
-function expandedMdForArgument(a: Argument, options: ResourceDisplayOptions) {
+function expandedMdForArgument(
+  ptr: ResourcePointer,
+  a: Argument,
+  options: ResourceDisplayOptions
+) {
   let expandedMd = "";
   if (!options.shouldShowArgTextOnly()) {
+    expandedMd += "Premises: " + (a.premises || []).join(" ") + "\\\n";
     expandedMd +=
-      "Premises: " + a.premises?.map((p) => "#" + p.toString()) + "\\\n";
-    expandedMd +=
-      "Conclusion: " + a.conclusion
-        ? "#" + a.conclusion.toString()
-        : "" + "\n\n";
+      "Conclusion: " +
+      (a.conclusion || "") +
+      "\n\n#" +
+      ptr.toString() +
+      "|EXPAND|ARG_TEXT_ONLY";
+  } else {
+    expandedMd = a.argumentText;
   }
   if (a.argumentText) expandedMd += a.argumentText;
   return expandedMd;
@@ -53,7 +60,8 @@ function expandedLink(
   link: LinkContent,
   resource: Resource,
   parser: MarkdownParser,
-  getLatexDefs: ILatexDefsFetcher
+  getLatexDefs: ILatexDefsFetcher,
+  originalExp: LinkContent[]
 ): Promise<AstNode[]> {
   const {
     linkTarget: { linkType, propPtr, ptr },
@@ -75,7 +83,7 @@ function expandedLink(
         expandedMd = expandedMdForProposition(resource as Proposition, true);
         break;
       case ResourceType.ARGUMENT:
-        expandedMd = expandedMdForArgument(resource as Argument, options);
+        expandedMd = expandedMdForArgument(ptr, resource as Argument, options);
         break;
     }
   } else if (linkType === LinkType.PROP_PTR) {
@@ -88,18 +96,34 @@ function expandedLink(
   if (canApplyCase)
     expandedMd = LinkHelpers.applyCase(expandedMd, options.caseOption);
 
+  const contextPtr = ptr || propPtr?.ptr;
+  const isMetamathArgument =
+    contextPtr.resourceType === ResourceType.ARGUMENT &&
+    language === Language.MetamathSetMm;
+  const inline =
+    contextPtr.resourceType !== ResourceType.ARGUMENT ||
+    (language !== Language.MetamathSetMm && options?.shouldShowArgTextOnly());
   return firstValueFrom(
     parser.parseSimple(expandedMd, getLatexDefs, {
-      inline: true,
-      language,
+      inline,
+      language:
+        isMetamathArgument && !options?.shouldShowArgTextOnly()
+          ? Language.Informal
+          : language,
       lookupTerms,
-      contextPtr: ptr || propPtr?.ptr,
+      contextPtr,
       plainText: false,
       caseOption: canApplyCase ? null : options.caseOption,
       addNegationMarker:
         propPtr?.negative && language === Language.MetamathSetMm,
+      expansionOf: [...(originalExp || []), link],
     })
-  );
+  ).then((ast) => {
+    // TODO: This is a hack. Create a detailed function to merge expansion into parent tree.
+    if (inline) return ast?.[0]?.children || [];
+    if (isMetamathArgument) return ast || [];
+    return ast[0]?.children?.[0]?.children || [];
+  });
 }
 
 function getExpansionTarget(node: AstNode, resourceMap: Map<string, Resource>) {
@@ -123,20 +147,24 @@ async function expandAstWithResources(
     const node = ast[i];
     const resource = getExpansionTarget(node, resourceMap);
     if (resource) {
-      const expanded = await expandedLink(
-        node.content,
-        resource,
-        parser,
-        getLatexDefs
-      );
-
-      parent.children = [
-        ...parent.children.slice(0, i),
-        ...expanded[0].children, //[0].children // TODOX
-        ...parent.children.slice(i + 1),
-      ];
+      try {
+        const expanded = await expandedLink(
+          node.content,
+          resource,
+          parser,
+          getLatexDefs,
+          node.expansionOf
+        );
+        parent.children = [
+          ...parent.children.slice(0, i),
+          ...expanded,
+          ...parent.children.slice(i + 1),
+        ];
+      } catch (e) {
+        console.log(e);
+      }
     }
-    expandAstWithResources(
+    await expandAstWithResources(
       node.children,
       resourceMap,
       node,
@@ -154,7 +182,8 @@ export function expandAst(
   resourceMap: Map<string, Resource>,
   parser: MarkdownParser,
   getResources: IResourceFetcher,
-  getLatexDefs?: ILatexDefsFetcher
+  getLatexDefs?: ILatexDefsFetcher,
+  originalExp?: LinkContent[]
 ) {
   if (expansionLevel >= MAX_EXPANSION_LEVEL) {
     subscriber.complete();
@@ -181,7 +210,8 @@ export function expandAst(
         resourceMap,
         parser,
         getResources,
-        getLatexDefs
+        getLatexDefs,
+        originalExp
       );
     }
   });

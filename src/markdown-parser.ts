@@ -43,7 +43,7 @@ export class MarkdownParser {
         const tokens = mdContext?.inline
           ? this.md.parseInline(corrected, mdContext)
           : this.md.parse(corrected, mdContext);
-        return tokensToAST(tokens);
+        return tokensToAST(tokens, mdContext?.expansionOf);
       })
     );
   };
@@ -73,7 +73,8 @@ export class MarkdownParser {
             resourceMap,
             this,
             getResources,
-            getLatexDefs
+            getLatexDefs,
+            mdContext?.expansionOf
           );
         });
         return expandedAst$;

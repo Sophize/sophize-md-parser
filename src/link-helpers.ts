@@ -6,6 +6,7 @@ import {
   ResourceType,
 } from "sophize-datamodel";
 import { CaseOption } from "./link-display-options";
+import { LinkContent } from "./link-plugin";
 
 export enum LinkType {
   UNKNOWN,
@@ -23,6 +24,7 @@ export interface MdContext {
   plainText?: boolean;
   caseOption?: CaseOption;
   addNegationMarker?: boolean;
+  expansionOf?: LinkContent[];
 }
 
 export class LinkTarget {
