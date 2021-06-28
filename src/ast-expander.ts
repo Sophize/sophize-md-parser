@@ -52,7 +52,7 @@ function expandedMdForArgument(
   } else {
     expandedMd = a.argumentText;
   }
-  if (a.argumentText) expandedMd += a.argumentText;
+
   return expandedMd;
 }
 
