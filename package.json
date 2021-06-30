@@ -8,7 +8,7 @@
     "build": "tsc",
     "test": "jasmine-ts --config=jasmine.json",
     "prepare": "npm run build",
-    "prepublishOnly" : "npm test && npm run lint"
+    "prepublishOnly": "npm test"
   },
   "repository": {
     "type": "git",
@@ -31,7 +31,7 @@
   "dependencies": {
     "markdown-it": "^12.0.6",
     "rxjs": "^7.1.0",
-    "sophize-datamodel": "^0.3.2"
+    "sophize-datamodel": "^0.3.4"
   },
   "devDependencies": {
     "@types/jasmine": "^3.7.7",
