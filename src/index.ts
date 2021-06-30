@@ -12,6 +12,7 @@ import {
 import { LinkHelpers, LinkTarget, LinkType, MdContext } from "./link-helpers";
 import { LinkContent } from "./link-plugin";
 import { MarkdownParser } from "./markdown-parser";
+import { AstNode } from "./md-utils";
 
 export { MarkdownParser };
 export { MdContext };
@@ -28,3 +29,4 @@ export { PageDisplayMode };
 export { PageDisplayOptions };
 export { CommentDisplayMode };
 export { CommentDisplayOptions };
+export { AstNode };
