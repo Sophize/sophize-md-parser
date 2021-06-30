@@ -31,7 +31,7 @@
   "dependencies": {
     "markdown-it": "^12.0.6",
     "rxjs": "^7.1.0",
-    "sophize-datamodel": "^0.3.4"
+    "sophize-datamodel": "^0.3.5"
   },
   "devDependencies": {
     "@types/jasmine": "^3.7.7",
