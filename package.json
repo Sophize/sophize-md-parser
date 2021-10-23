@@ -1,6 +1,6 @@
 {
   "name": "sophize-md-parser",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Parser for Sophize markdown",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -29,19 +29,19 @@
   },
   "homepage": "https://github.com/Sophize/sophize-md-parser#readme",
   "dependencies": {
-    "markdown-it": "^12.0.6",
-    "rxjs": "^7.1.0",
-    "sophize-datamodel": "^0.3.5"
+    "markdown-it": "^12.2.0",
+    "rxjs": "^7.4.0",
+    "sophize-datamodel": "^0.3.7"
   },
   "devDependencies": {
-    "@types/jasmine": "^3.7.7",
-    "@types/markdown-it": "^12.0.2",
-    "jasmine": "^3.7.0",
+    "@types/jasmine": "^3.10.1",
+    "@types/markdown-it": "^12.2.3",
+    "jasmine": "^3.10.0",
     "jasmine-spec-reporter": "^7.0.0",
     "jasmine-ts": "^0.4.0",
-    "node-fetch": "^2.6.1",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.2.4"
+    "node-fetch": "^2.6.5",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.4.4"
   },
   "files": [
     "dist/src/**/*"
