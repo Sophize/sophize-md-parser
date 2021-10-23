@@ -92,7 +92,7 @@ export enum OtherDisplayOptions {
   ARG_TEXT_ONLY = "ARG_TEXT_ONLY", // EXPAND_ONLY, ARG_ONLY
   PLAIN_TEXT = "PLAIN_TEXT", // EXPAND_ONLY
   HIDE_TVI = "HIDE_TVI", // Propositions Only
-  HIDE_VALIDITY = "HIDE_VALIDITY", // Arguments Only
+  HIDE_ARG_ICON = "HIDE_ARG_ICON", // Arguments Only
   HIDE_ACTIVATED = "HIDE_ACTIVATED", // Machines Only
 }
 
@@ -128,8 +128,8 @@ export class ResourceDisplayOptions {
       if (this.shouldShowTVI()) {
         this.otherOptions.push(OtherDisplayOptions.HIDE_TVI);
       }
-      if (this.shouldShowValidity()) {
-        this.otherOptions.push(OtherDisplayOptions.HIDE_VALIDITY);
+      if (this.shouldShowArgumentIcon()) {
+        this.otherOptions.push(OtherDisplayOptions.HIDE_ARG_ICON);
       }
       if (this.shouldShowActivated()) {
         this.otherOptions.push(OtherDisplayOptions.HIDE_ACTIVATED);
@@ -159,8 +159,8 @@ export class ResourceDisplayOptions {
     return !this.otherOptions.includes(OtherDisplayOptions.HIDE_TVI);
   }
 
-  public shouldShowValidity() {
-    return !this.otherOptions.includes(OtherDisplayOptions.HIDE_VALIDITY);
+  public shouldShowArgumentIcon() {
+    return !this.otherOptions.includes(OtherDisplayOptions.HIDE_ARG_ICON);
   }
 
   public shouldShowActivated() {
